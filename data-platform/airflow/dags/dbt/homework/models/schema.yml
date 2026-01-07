@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: stg_iris
+    description: "Staging table for the Iris dataset"
+    columns:
+      - name: sepal_length
+        description: "Sepal length in cm"
+      - name: sepal_width
+        description: "Sepal width in cm"
+      - name: petal_length
+        description: "Petal length in cm"
+      - name: petal_width
+        description: "Petal width in cm"
+      - name: species
+        description: "Species of Iris flower"
+
+  - name: iris_processed
+    description: "Processed Iris dataset with ML preprocessing transformations"
+    columns:
+      - name: sepal_length
+        description: "Original sepal length in cm"
+      - name: sepal_width
+        description: "Original sepal width in cm"
+      - name: petal_length
+        description: "Original petal length in cm"
+      - name: petal_width
+        description: "Original petal width in cm"
+      - name: species
+        description: "Original species name"

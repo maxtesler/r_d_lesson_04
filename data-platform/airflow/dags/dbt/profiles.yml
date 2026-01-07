@@ -1,0 +1,24 @@
+my_dbt_project:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_ANALYTICS_HOST') }}"
+      user: "{{ env_var('ETL_USER') }}"
+      password: "{{ env_var('ETL_PASSWORD') }}"
+      port: 5432
+      dbname: "{{ env_var('ANALYTICS_DB') }}"
+      schema: analytics
+      threads: 4
+homework:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_ANALYTICS_HOST', 'postgres_analytics') }}"
+      user: "{{ env_var('ETL_USER') }}"
+      password: "{{ env_var('ETL_PASSWORD') }}"
+      port: 5432
+      dbname: "{{ env_var('ANALYTICS_DB', 'analytics') }}"
+      schema: homework
+      threads: 4

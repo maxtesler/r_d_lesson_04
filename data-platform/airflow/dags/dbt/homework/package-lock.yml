@@ -1,0 +1,6 @@
+packages:
+  - package: Matts52/dbt_ml_inline_preprocessing
+    version: 0.2.4
+  - package: dbt-labs/dbt_utils
+    version: 1.3.0
+sha1_hash: 14625cbaae983ffe72c1517c295c950880df8cbc

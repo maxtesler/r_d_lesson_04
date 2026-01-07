@@ -1,0 +1,28 @@
+CREATE DATABASE airflowuser;
+
+-- Connect to the airflow database for remaining operations
+\c airflow;
+-- Create read-only user
+CREATE USER ${AIRFLOW_READONLY_USER} WITH PASSWORD '${AIRFLOW_READONLY_PASSWORD}';
+
+-- The Airflow database tables will be created by Airflow itself during initialization
+-- We just need to set up permissions for the read-only user
+
+-- Grant read-only access to all future tables (Airflow will create them)
+ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO ${AIRFLOW_READONLY_USER};
+
+-- Create a view to check Airflow DAG runs
+/*CREATE OR REPLACE VIEW airflow_status AS
+SELECT 
+    dag_id,
+    execution_date,
+    state,
+    start_date,
+    end_date
+FROM
+    dag_run
+ORDER BY
+    execution_date DESC;
+
+-- Grant access to the view
+GRANT SELECT ON airflow_status TO ${AIRFLOW_READONLY_USER}; */
