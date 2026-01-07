@@ -1,0 +1,166 @@
+services:
+  postgres_analytics:
+    build:
+      context: ./postgres_analytics
+    container_name: analytics_db
+    environment:
+      - POSTGRES_USER=${POSTGRES_ANALYTICS_DATAUSER}
+      - POSTGRES_PASSWORD=${POSTGRES_ANALYTICS_DATAPASSWORD}
+      - POSTGRES_DB=${POSTGRES_ANALYTICS_DB}
+      - ANALYTICS_READONLY_USER=${ANALYTICS_READONLY_USER}
+      - ANALYTICS_READONLY_PASSWORD=${ANALYTICS_READONLY_PASSWORD}
+      - ETL_USER=${ETL_USER}
+      - ETL_PASSWORD=${ETL_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_analytics_data:/var/lib/postgresql/data
+    networks:
+      - data_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_ANALYTICS_DATAUSER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  postgres_airflow:
+    build:
+      context: ./postgres_airflow
+    container_name: airflow_metastore
+    environment:
+      - POSTGRES_USER=${POSTGRES_AIRFLOW_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_AIRFLOW_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_AIRFLOW_DB}
+      - AIRFLOW_READONLY_USER=${AIRFLOW_READONLY_USER}
+      - AIRFLOW_READONLY_PASSWORD=${AIRFLOW_READONLY_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_airflow:/var/lib/postgresql/data
+    networks:
+      - data_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_AIRFLOW_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+    env_file:
+      - .env
+    container_name: airflow_webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/packages:/opt/airflow/dbt/packages.yml
+      - airflow_logs:/opt/airflow/logs
+      - ml_models:/opt/airflow/models
+      - ml_results:/opt/airflow/inference_results
+    environment:
+      - AIRFLOW_FERNET_KEY=${AIRFLOW_FERNET_KEY}
+      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW_INSTALLATION_METHOD=docker
+      - AIRFLOW_WEBSERVER_SECRET_KEY=${AIRFLOW_SECRET_KEY}
+      # Airflow metastore connection
+      - POSTGRES_AIRFLOW_HOST=postgres_airflow
+      - POSTGRES_AIRFLOW_USER=${POSTGRES_AIRFLOW_USER}
+      - POSTGRES_AIRFLOW_PASSWORD=${POSTGRES_AIRFLOW_PASSWORD}
+      - POSTGRES_AIRFLOW_DB=${POSTGRES_AIRFLOW_DB}
+      # Analytics connection for ETL tasks
+      - POSTGRES_ANALYTICS_HOST=postgres_analytics
+      - ETL_USER=${ETL_USER}
+      - ETL_PASSWORD=${ETL_PASSWORD}
+      - ANALYTICS_DB=${POSTGRES_ANALYTICS_DB}
+      # Read-only users
+      - ANALYTICS_READONLY_USER=${ANALYTICS_READONLY_USER}
+      - ANALYTICS_READONLY_PASSWORD=${ANALYTICS_READONLY_PASSWORD}
+      # ML volumes
+      - MODELS_DIR=/opt/airflow/models
+      - RESULTS_DIR=/opt/airflow/inference_results
+      # Disable Google providers
+      - AIRFLOW__PROVIDERS__DISABLE_PACKAGE_PROVIDERS=google,google_cloud,apache-airflow-providers-google
+    networks:
+      - data_network
+    depends_on:
+      postgres_airflow:
+        condition: service_healthy
+      postgres_analytics:
+        condition: service_healthy
+    restart: always
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+    env_file:
+      - .env  
+    container_name: airflow_scheduler
+    command: scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/packages:/opt/airflow/dbt/packages.yml
+      - airflow_logs:/opt/airflow/logs
+      - ml_models:/opt/airflow/models
+      - ml_results:/opt/airflow/inference_results
+    environment:
+      - AIRFLOW_FERNET_KEY=${AIRFLOW_FERNET_KEY}
+      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW_INSTALLATION_METHOD=docker
+      # Airflow metastore connection
+      - POSTGRES_AIRFLOW_HOST=postgres_airflow
+      - POSTGRES_AIRFLOW_USER=${POSTGRES_AIRFLOW_USER}
+      - POSTGRES_AIRFLOW_PASSWORD=${POSTGRES_AIRFLOW_PASSWORD}
+      - POSTGRES_AIRFLOW_DB=${POSTGRES_AIRFLOW_DB}
+      # Analytics connection for ETL tasks
+      - POSTGRES_ANALYTICS_HOST=postgres_analytics
+      - ETL_USER=${ETL_USER}
+      - ETL_PASSWORD=${ETL_PASSWORD}
+      - ANALYTICS_DB=${POSTGRES_ANALYTICS_DB}
+      # Read-only users
+      - ANALYTICS_READONLY_USER=${ANALYTICS_READONLY_USER}
+      - ANALYTICS_READONLY_PASSWORD=${ANALYTICS_READONLY_PASSWORD}
+      # ML volumes
+      - MODELS_DIR=/opt/airflow/models
+      - RESULTS_DIR=/opt/airflow/inference_results
+      # Disable Google providers
+      - AIRFLOW__PROVIDERS__DISABLE_PACKAGE_PROVIDERS=google,google_cloud,apache-airflow-providers-google
+    networks:
+      - data_network
+    depends_on:
+      postgres_airflow:
+        condition: service_healthy
+      postgres_analytics:
+        condition: service_healthy
+      airflow-webserver:
+        condition: service_started
+    restart: always
+
+  job_server:
+    build:
+      context: ./job_server
+    container_name: job_server
+    ports:
+      - "8000:8000"
+    networks:
+      - data_network
+    restart: always  
+
+volumes:
+  postgres_analytics_data:
+  postgres_airflow:
+  airflow_logs:
+  ml_models:
+  ml_results:
+
+networks:
+  data_network:
+    driver: bridge

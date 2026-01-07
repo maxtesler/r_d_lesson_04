@@ -1,0 +1,12 @@
+dbt-postgres>=1.4.0
+dbt-core>=1.4.0
+psycopg2-binary>=2.9.3
+apache-airflow-providers-postgres>=5.2.0
+pandas>=1.5.0
+pyarrow<10.1.0,>=10.0.1
+SQLAlchemy>=1.4.0
+scikit-learn>=1.0.0
+numpy>=1.23.0
+apache-airflow-providers-docker>=2.1.0
+apache-airflow-providers-http>=2.0.1
+apache-airflow-providers-common-sql>=1.0.0
